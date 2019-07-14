@@ -129,3 +129,16 @@ Resources:
           ToPort: 443
           CidrIp: 0.0.0.0/0
       VpcId: !Ref VPC
+  VolumeForDevelopmentServer:
+    Type: AWS::EC2::Volume
+    Properties:
+      AvailabilityZone: ap-northeast-1a
+      Size: 20
+      VolumeType: gp2
+  VolumeAttachmentForDevelopmentServer:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: "/dev/sdf"
+      InstanceId: !Ref DevelopmentServer
+      VolumeId:
+        Ref: VolumeForDevelopmentServer
