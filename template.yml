@@ -11,6 +11,11 @@ Parameters:
     ConstraintDescription: SSH KeyPair to access to the bastion server
     Type: AWS::EC2::KeyPair::KeyName
     Default: development-environment
+  AvailabilityZone:
+    Description: The availability zone this service uses
+    ConstraintDescription: The availability zone this service uses
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: ap-northeast-1d
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -27,73 +32,62 @@ Resources:
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      InternetGatewayId:
-        Ref: InternetGateway
-      VpcId:
-        Ref: VPC
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
     Metadata:
       AWS::CloudFormation::Designer:
         id: f83aa6eb-e2ac-48f5-bd28-15cb89c9d677
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId:
-        Ref: VPC
+      VpcId: !Ref VPC
   PublicRoute:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId:
-        Ref: InternetGateway
-      RouteTableId:
-        Ref: PublicRouteTable
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTable
   PublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:
+      AvailabilityZone: !Ref AvailabilityZone
       CidrBlock: 10.1.10.0/24
       MapPublicIpOnLaunch: true
-      VpcId:
-        Ref: VPC
+      VpcId: !Ref VPC
     Metadata:
       AWS::CloudFormation::Designer:
         id: 09d90cb1-3ad5-4537-9ee5-5c376404cdd1
   PublicSubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId:
-        Ref: PublicRouteTable
-      SubnetId:
-        Ref: PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId:
-        Ref: VPC
+      VpcId: !Ref VPC
   PrivateRoute:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
-      InstanceId:
-        Ref: DevelopmentServer
-      RouteTableId:
-        Ref: PrivateRouteTable
+      InstanceId: !Ref DevelopmentServer
+      RouteTableId: !Ref PrivateRouteTable
   PrivateSubnet:
     Type: AWS::EC2::Subnet
     Properties:
+      AvailabilityZone: !Ref AvailabilityZone
       CidrBlock: 10.1.20.0/24
-      VpcId:
-        Ref: VPC
+      VpcId: !Ref VPC
   BastionServer:
     Type: AWS::EC2::Instance
     Properties:
+      AvailabilityZone: !Ref AvailabilityZone
       InstanceType: t3.nano
       ImageId: ami-09b68f5653871885f
-      KeyName:
-        Ref: KeyForBastion
-      SubnetId:
-        Ref: PublicSubnet
+      KeyName: !Ref KeyForBastion
+      SubnetId: !Ref PublicSubnet
       SecurityGroupIds:
-        - Ref: BastionServerSecurityGroup
+        - !Ref BastionServerSecurityGroup
   BastionServerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -111,19 +105,17 @@ Resources:
           FromPort: 443
           ToPort: 443
           CidrIp: 0.0.0.0/0
-      VpcId:
-        Ref: VPC
+      VpcId: !Ref VPC
   DevelopmentServer:
     Type: AWS::EC2::Instance
     Properties:
+      AvailabilityZone: !Ref AvailabilityZone
       InstanceType: t3.2xlarge
       ImageId: ami-09b68f5653871885f
-      KeyName:
-        Ref: KeyForDevelopment
-      SubnetId:
-        Ref: PrivateSubnet
+      KeyName: !Ref KeyForDevelopment
+      SubnetId: !Ref PrivateSubnet
       SecurityGroupIds:
-        - Ref: DevelopmentServerSecurityGroup
+        - !Ref DevelopmentServerSecurityGroup
   DevelopmentServerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -145,19 +137,18 @@ Resources:
           FromPort: 443
           ToPort: 443
           CidrIp: 0.0.0.0/0
-      VpcId:
-        Ref: VPC
+      VpcId: !Ref VPC
   VolumeForDevelopmentServer:
     Type: AWS::EC2::Volume
     Properties:
-      AvailabilityZone: ap-northeast-1a
+      # It cannot be empty
+      AvailabilityZone: !Ref AvailabilityZone
       Size: 20
       VolumeType: gp2
   VolumeAttachmentForDevelopmentServer:
     Type: AWS::EC2::VolumeAttachment
     Properties:
       Device: /dev/sdf
-      InstanceId:
-        Ref: DevelopmentServer
+      InstanceId: !Ref DevelopmentServer
       VolumeId:
         Ref: VolumeForDevelopmentServer
