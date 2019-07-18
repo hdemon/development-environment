@@ -1,0 +1,10 @@
+#!/bin/sh
+
+STACK_ID="$(aws cloudformation describe-stack-events --stack-name development-environment | jq -r '.StackEvents[] | select(.LogicalResourceId == "BastionServer") | select(.ResourceStatus == "CREATE_COMPLETE") | .StackId')"
+PUBLIC_DNS_NAME_OF_BASTIONSERVER=$(aws ec2 describe-instances --query 'Reservations[].Instances[]' | jq -r ".[] | select(.Tags[].Value == \"$STACK_ID\" and .KeyName == \"bastion-of-development-environment\") | .PublicDnsName")
+PUBLIC_DNS_NAME_OF_DEVSERVER=$(aws ec2 describe-instances --query 'Reservations[].Instances[]' | jq -r ".[] | select(.Tags[].Value == \"$STACK_ID\" and .KeyName == \"development-environment\") | .PrivateDnsName")
+
+echo $PUBLIC_DNS_NAME_OF_BASTIONSERVER
+echo $PUBLIC_DNS_NAME_OF_DEVSERVER
+
+ssh -o ProxyCommand="ssh -i ./bastion-of-development-environment.pem ubuntu@$PUBLIC_DNS_NAME_OF_BASTIONSERVER -W $PUBLIC_DNS_NAME_OF_DEVSERVER:22" -i ./development-environment.pem  ubuntu@$PUBLIC_DNS_NAME_OF_DEVSERVER

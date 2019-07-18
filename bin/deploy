@@ -36,8 +36,3 @@ if [ "$?" = 255 ]; then
     aws cloudformation describe-stack-events --stack-name development-environment | jq '.StackEvents[] | select(.ResourceStatus == "CREATE_FAILED") | { id: .LogicalResourceId, type: .ResourceType, reason: .ResourceStatusReason }'
     aws cloudformation delete-stack --stack-name development-environment
 fi
-
-STACK_ID="$(aws cloudformation describe-stack-events --stack-name development-environment | jq -r '.StackEvents[] | select(.LogicalResourceId == "BastionServer") | select(.ResourceStatus == "CREATE_COMPLETE") | .StackId')"
-HOSTNAME=$(aws ec2 describe-instances --query 'Reservations[].Instances[]' | jq -r ".[] | select(.Tags[].Value == \"$STACK_ID\" and .KeyName == \"bastion-of-development-environment\") | .PublicDnsName")
-
-echo $HOSTNAME

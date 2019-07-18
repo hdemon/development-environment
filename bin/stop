@@ -1,0 +1,10 @@
+#!/bin/sh
+
+STACK_ID="$(aws cloudformation describe-stack-events --stack-name development-environment | jq -r '.StackEvents[] | select(.LogicalResourceId == "BastionServer") | select(.ResourceStatus == "CREATE_COMPLETE") | .StackId')"
+INSTANCE_ID_OF_BASTIONSERVER=$(aws ec2 describe-instances --query 'Reservations[].Instances[]' | jq -r ".[] | select(.Tags[].Value == \"$STACK_ID\" and .KeyName == \"bastion-of-development-environment\") | .InstanceId")
+INSTANCE_ID_OF_DEVSERVER=$(aws ec2 describe-instances --query 'Reservations[].Instances[]' | jq -r ".[] | select(.Tags[].Value == \"$STACK_ID\" and .KeyName == \"development-environment\") | .InstanceId")
+
+echo $INSTANCE_ID_OF_BASTIONSERVER
+echo $INSTANCE_ID_OF_DEVSERVER
+
+aws ec2 stop-instances --instance-ids $INSTANCE_ID_OF_BASTIONSERVER $INSTANCE_ID_OF_DEVSERVER
