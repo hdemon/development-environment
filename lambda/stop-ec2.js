@@ -36,27 +36,31 @@ const getInstanceIds = ({ StackName: stackName }) => {
 
 const ec2Stop = async InstanceIds => {
   const params = { InstanceIds };
-  let hasSuccess = false;
 
-  await ec2.terminateInstances(params, function(err, data) {
-    console.log("Waiting for instance to be terminated..");
-    if (!!err) {
-      console.error(err, err.stack);
-    } else {
-      hasSuccess = true;
-    }
-  });
-
-  return hasSuccess;
+  return new Promise(resolve =>
+    ec2.terminateInstances(params, function(err, data) {
+      console.log("Waiting for instance to be terminated..");
+      if (!!err) {
+        console.error(err, err.stack);
+      } else {
+        resolve(true);
+      }
+    })
+  );
 };
 
 exports.handler = async (event, context) => {
   const instanceIds = await getInstanceIds({
     StackName: "development-environment"
   });
-  console.log(`Instance: ${instanceIds.join("")}`);
-  const hasSuccess = await ec2Stop(instanceIds);
-  if (hasSuccess) {
-    context.done(null, `Instance: ${instanceIds} have terminated`);
+
+  if (instanceIds) {
+    console.log(`Instance: ${instanceIds.join(" ")}`);
+    const hasSuccess = await ec2Stop(instanceIds);
+    if (hasSuccess) {
+      context.done(null, `Instance: ${instanceIds} have terminated`);
+    }
+  } else {
+    console.log("You have no instances based on the stack.");
   }
 };
