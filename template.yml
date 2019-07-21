@@ -152,3 +152,67 @@ Resources:
       InstanceId: !Ref DevelopmentServer
       VolumeId:
         Ref: VolumeForDevelopmentServer
+  EC2Stopper:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: ec2-stopper
+      Handler: stop-ec2.handler
+      Runtime: nodejs10.x
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 10
+      Code: lambda/stop-ec2.js
+  EC2StopperScheduler:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: ’schedule event for lambda’
+      ScheduleExpression: "cron(1 1 * ? * *)"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt EC2Stopper.Arn
+          Id: ScheduleEvent1Target
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref EC2Stopper
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt EC2StopperScheduler.Arn
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      # Policies:
+      #   - PolicyName: lambdatest
+      #     PolicyDocument:
+      #       Version: "2012-10-17"
+      #       Statement:
+      #         - Effect: Allow
+      #           Action:
+      #             - "cloudformation:DescribeStackEvents"
+      #             - "ec2:TerminateInstances"
+      #           Resource: arn:aws:*:*:*:*
+  IAMRoleForEC2Stopper:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: EC2Terminater
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "ec2:TerminateInstances"
+              - "ec2:DescribeInstances"
+            Resource: "*"
+
+      # Path: "/"
+      Roles:
+        - !Ref LambdaExecutionRole
