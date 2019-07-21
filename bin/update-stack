@@ -1,0 +1,28 @@
+#!/bin/sh
+
+aws s3 mb s3://development-environment-template
+
+aws cloudformation validate-template \
+    --template-body file://./template.yml
+
+
+# package first and then deploy otherwise need to use S3 to store the template file.
+aws cloudformation package \
+    --template-file template.yml \
+    --s3-bucket development-environment-template \
+    --output-template-file packaged-template.yml
+
+npx cfn-lint validate ./packaged-template.yml
+
+# need this capabilities to create a stack
+aws cloudformation update-stack \
+    --stack-name development-environment \
+    --template-body "file://$(pwd)/packaged-template.yml" \
+    --capabilities CAPABILITY_IAM \
+    # --tags date="$(date '+%Y%m%d%H%M%S')"
+
+aws cloudformation execute-change-set
+
+if [ "$?" = 255 ]; then
+    aws cloudformation describe-stack-events --stack-name development-environment | jq '.StackEvents[] | select(.ResourceStatus == "CREATE_FAILED") | { id: .LogicalResourceId, type: .ResourceType, reason: .ResourceStatusReason }'
+fi

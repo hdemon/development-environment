@@ -4,6 +4,10 @@ STACK_ID="$(aws cloudformation describe-stack-events --stack-name development-en
 INSTANCE_ID_OF_BASTIONSERVER=$(aws ec2 describe-instances --query 'Reservations[].Instances[]' | jq -r ".[] | select(.Tags[].Value == \"$STACK_ID\" and .KeyName == \"bastion-of-development-environment\") | .InstanceId")
 INSTANCE_ID_OF_DEVSERVER=$(aws ec2 describe-instances --query 'Reservations[].Instances[]' | jq -r ".[] | select(.Tags[].Value == \"$STACK_ID\" and .KeyName == \"development-environment\") | .InstanceId")
 
+# --query "Reservations[*].Instances[*].InstanceId[]" \
+# --filters "Name=tag-key,Values=aws:cloudformation:stack-name" "Name=tag-value,Values=<stack_name>" \
+# --output=text
+
 echo $INSTANCE_ID_OF_BASTIONSERVER
 echo $INSTANCE_ID_OF_DEVSERVER
 

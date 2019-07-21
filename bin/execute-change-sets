@@ -1,0 +1,33 @@
+#!/bin/sh
+
+CHANGE_SET_NAME="c$(date '+%Y%m%d%H%M%S')"
+
+aws cloudformation validate-template \
+    --template-body file://./template.yml
+
+# package first and then deploy otherwise need to use S3 to store the template file.
+aws cloudformation package \
+    --template-file template.yml \
+    --s3-bucket development-environment-template \
+    --output-template-file packaged-template.yml
+
+npx cfn-lint validate ./packaged-template.yml
+
+# need this capabilities to create a stack
+aws cloudformation create-change-set \
+    --stack-name development-environment \
+    --change-set-name $CHANGE_SET_NAME \
+    --template-body file://./packaged-template.yml \
+    --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
+    # --capabilities CAPABILITY_IAM
+
+aws cloudformation wait change-set-create-complete \
+    --change-set-name $CHANGE_SET_NAME \
+
+aws cloudformation execute-change-set \
+    --stack-name development-environment \
+    --change-set-name $CHANGE_SET_NAME
+
+if [ "$?" = 255 ]; then
+    aws cloudformation describe-stack-events --stack-name development-environment | jq '.StackEvents[] | select(.ResourceStatus == "CREATE_FAILED") | { id: .LogicalResourceId, type: .ResourceType, reason: .ResourceStatusReason }'
+fi
