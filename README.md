@@ -12,6 +12,7 @@ This is a provisioner to establish your own development environment on AWS.
 ## Usage
 
 ```bash
+    npm install
     bin/deploy
     bin/connect
 ```
