@@ -229,16 +229,6 @@ Resources:
             Action:
               - sts:AssumeRole
       Path: "/"
-      # Policies:
-      #   - PolicyName: lambdatest
-      #     PolicyDocument:
-      #       Version: "2012-10-17"
-      #       Statement:
-      #         - Effect: Allow
-      #           Action:
-      #             - "cloudformation:DescribeStackEvents"
-      #             - "ec2:TerminateInstances"
-      #           Resource: arn:aws:*:*:*:*
   IAMRoleForEC2Stopper:
     Type: AWS::IAM::Policy
     Properties:
@@ -251,7 +241,5 @@ Resources:
               - "ec2:TerminateInstances"
               - "ec2:DescribeInstances"
             Resource: "*"
-
-      # Path: "/"
       Roles:
         - !Ref LambdaExecutionRole
